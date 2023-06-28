@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /**
  * Copyright 2021-present, Facebook, Inc. All rights reserved.
  *
@@ -21,6 +22,9 @@ const express = require("express"),
   config = require("./services/config"),
   i18n = require("./i18n.config"),
   app = express();
+
+  fetch = require("node-fetch"),
+  { URL, URLSearchParams } = require("url");
 
 var users = {};
 
@@ -63,56 +67,70 @@ app.get("/webhook", (req, res) => {
       // Respond with '403 Forbidden' if verify tokens do not match
       res.sendStatus(403);
     }
+  } else {
+    // Returns a '404 Not Found' if mode or token are missing
+    res.sendStatus(404);
   }
 });
 
 // Create the endpoint for your webhook
 app.post("/webhook", (req, res) => {
+  console.log("inside webhook");
   let body = req.body;
 
   console.log(`\u{1F7EA} Received webhook:`);
   console.dir(body, { depth: null });
 
-  // Check if this is an event from a page subscription
-  if (body.object === "page") {
-    // Returns a '200 OK' response to all requests
-    res.status(200).send("EVENT_RECEIVED");
+  // // Check if this is an event from a page subscription
+  if (body.object === "instagram") {
+    //Returns a '200 OK' response to all requests
+     res.status(200).send("EVENT_RECEIVED");
+      let entry = body.entry[0];
+     let receiveMessage = new Receive();
+     let messaging = entry.messaging[0].message;
+     let msg = messaging.text;
+     //console.log('type: ', entry.changes[0].field)
+     console.log("msg: ",msg);
+     //HOW SEND?
+
+     //return receiveMessage.handlePrivateReply("comment_id", change.comment_id);
 
     // Iterate over each entry - there may be multiple if batched
     body.entry.forEach(async function (entry) {
-      if ("changes" in entry) {
-        // Handle Page Changes event
-        let receiveMessage = new Receive();
-        if (entry.changes[0].field === "feed") {
-          let change = entry.changes[0].value;
-          switch (change.item) {
-            case "post":
-              return receiveMessage.handlePrivateReply(
-                "post_id",
-                change.post_id
-              );
-            case "comment":
-              return receiveMessage.handlePrivateReply(
-                "comment_id",
-                change.comment_id
-              );
-            default:
-              console.warn("Unsupported feed change type.");
-              return;
-          }
-        }
-      }
+    //   if ("changes" in entry) {
+    //     // Handle Page Changes event
+    //        let receiveMessage = new Receive();
+    //     if (entry.changes[0].field === "feed") {
+    //       let change = entry.changes[0].value;
+    //       switch (change.item) {
+    //         case "post":
+    //           return receiveMessage.handlePrivateReply(
+    //             "post_id",
+    //             change.post_id
+    //           );
+    //         case "comment":
+    //           return receiveMessage.handlePrivateReply(
+    //             "comment_id",
+    //             change.comment_id
+    //           );
+    //         default:
+    //           console.warn("Unsupported feed change type.");
+    //           return;
+    //       }
+    //     }
+    // }
 
       // Iterate over webhook events - there may be multiple
       entry.messaging.forEach(async function (webhookEvent) {
-        // Discard uninteresting events
-        if ("read" in webhookEvent) {
-          console.log("Got a read event");
-          return;
-        } else if ("delivery" in webhookEvent) {
-          console.log("Got a delivery event");
-          return;
-        } else if (webhookEvent.message && webhookEvent.message.is_echo) {
+        // Discard uninteresting events        
+        // if ("read" in webhookEvent) {
+        //   console.log("Got a read event");
+        //   return;
+        // } else if ("delivery" in webhookEvent) {
+        //   console.log("Got a delivery event");
+        //   return;
+        // } else 
+        if (webhookEvent.message && webhookEvent.message.is_echo) {
           console.log(
             "Got an echo of our send, mid = " + webhookEvent.message.mid
           );
@@ -121,6 +139,9 @@ app.post("/webhook", (req, res) => {
 
         // Get the sender PSID
         let senderPsid = webhookEvent.sender.id;
+
+        //return receiveAndReturn(senderPsid, webhookEvent, msg);
+
         // Get the user_ref if from Chat plugin logged in user
         let user_ref = webhookEvent.sender.user_ref;
         // Check if user is guest from Chat plugin guest user
@@ -179,7 +200,7 @@ app.post("/webhook", (req, res) => {
     });
   } else {
     // Return a '404 Not Found' if event is not from a page subscription
-    res.sendStatus(404);
+      res.sendStatus(404);
   }
 });
 
@@ -201,7 +222,7 @@ function isGuestUser(webhookEvent) {
   return guestUser;
 }
 
-function receiveAndReturn(user, webhookEvent, isUserRef) {
+async function receiveAndReturn(user, webhookEvent, isUserRef) {
   let receiveMessage = new Receive(user, webhookEvent, isUserRef);
   return receiveMessage.handleMessage();
 }

@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /**
  * Copyright 2021-present, Facebook, Inc. All rights reserved.
  *
@@ -88,10 +89,11 @@ module.exports = class Receive {
 
     let response;
 
-    if (
-      (greeting && greeting.confidence > 0.8) ||
-      message.includes("start over")
-    ) {
+    response = [{'text': 'you said ' + message + ''}];
+    return response;
+
+    if ((greeting && greeting.confidence > 0.8) ||
+      message.includes("start over")) {
       response = Response.genNuxMessage(this.user);
     } else if (Number(message)) {
       response = Order.handlePayload("ORDER_NUMBER");
